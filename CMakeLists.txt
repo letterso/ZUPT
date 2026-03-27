@@ -21,7 +21,14 @@ SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")                   # rele
 SET(CMAKE_BUILD_TYPE "RelWithDebInfo")  # 选项: Release Debug MinSizeRel RelWithDebInfo
 
 find_package(Eigen3 REQUIRED)
-find_package(rosbag REQUIRED)
+
+option(ENABLE_ROS2_BAG "Enable ROS2 bag reading support" OFF)
+
+if(ENABLE_ROS2_BAG)
+  find_package(rclcpp REQUIRED)
+  find_package(sensor_msgs REQUIRED)
+  find_package(rosbag2_cpp REQUIRED)
+endif()
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib) # 静态库
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib) # 动态库
@@ -29,11 +36,17 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin) # 可执行文件
 
 include_directories(
   ${EIGEN3_INCLUDE_DIR}
-  ${rosbag_INCLUDE_DIRS}
   include)
 
 add_executable(main
    ./src/main.cpp
    ./src/zupt.cpp)
-target_link_libraries(main ${rosbag_LIBRARIES})
+
+if(ENABLE_ROS2_BAG)
+  target_compile_definitions(main PRIVATE ENABLE_ROS2_BAG)
+  target_link_libraries(main
+    rclcpp::rclcpp
+    sensor_msgs::sensor_msgs
+    rosbag2_cpp::rosbag2_cpp)
+endif()
 
