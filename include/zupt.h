@@ -3,8 +3,10 @@
 
 #include <fstream>
 #include <iostream>
-#include <math.h>
+#include <cmath>
+#include <limits>
 #include <memory>
+#include <string>
 #include <vector>
 
 struct ImuData {
@@ -38,17 +40,23 @@ private:
   double zupt_thd_;
 
   // debug
+  bool score_logging_enabled_;
   std::ofstream out_file_;
 
   // https://github.com/hcarlsso/ZUPT-aided-INS
-  bool glrt_handle(const std::vector<Eigen::Vector3d> &acc_measures,
+  static bool is_finite_vector(const Eigen::Vector3d &vec);
+  static bool has_valid_samples(
+      const std::vector<Eigen::Vector3d> &acc_measures,
+      const std::vector<Eigen::Vector3d> &gyo_measures);
+  void log_score(double score);
+  double glrt_score(const std::vector<Eigen::Vector3d> &acc_measures,
+                    const std::vector<Eigen::Vector3d> &gyo_measures);
+  double mv_score(const std::vector<Eigen::Vector3d> &acc_measures,
+                  const std::vector<Eigen::Vector3d> &gyo_measures);
+  double mag_score(const std::vector<Eigen::Vector3d> &acc_measures,
                    const std::vector<Eigen::Vector3d> &gyo_measures);
-  bool mv_handle(const std::vector<Eigen::Vector3d> &acc_measures,
-                 const std::vector<Eigen::Vector3d> &gyo_measures);
-  bool mag_handle(const std::vector<Eigen::Vector3d> &acc_measures,
-                  const std::vector<Eigen::Vector3d> &gyo_measures);
-  bool are_handle(const std::vector<Eigen::Vector3d> &acc_measures,
-                  const std::vector<Eigen::Vector3d> &gyo_measures);
+  double are_score(const std::vector<Eigen::Vector3d> &acc_measures,
+                   const std::vector<Eigen::Vector3d> &gyo_measures);
 
 public:
   typedef std::shared_ptr<ZUPT> Ptr;
@@ -58,20 +66,34 @@ public:
 
   enum class IMUDetectorType { GLRT = 0, MV = 1, MAG = 2, ARE = 3 };
 
-  void set_imu_param(const double &g_norm, const double &sigma_acc,
-                     const double &sigma_gyo) {
+  struct DetectionResult {
+    bool zupt_detected = false;
+    bool valid = false;
+    double score = std::numeric_limits<double>::quiet_NaN();
+  };
+
+  void set_imu_param(double g_norm, double sigma_acc, double sigma_gyo) {
     g_norm_ = g_norm;
     sigma_acc_2_ = sigma_acc * sigma_acc;
     sigma_gyo_2_ = sigma_gyo * sigma_gyo;
     imu_enabled_ = true;
   }
 
-  void set_image_param(const double &feature_thd) {
+  void set_image_param(double feature_thd) {
     feature_thd_ = feature_thd;
     image_enabled_ = true;
   }
 
+  void set_score_output_path(const std::string &output_path);
+
+  void enable_score_logging(bool enabled) { score_logging_enabled_ = enabled; }
+
   bool detect_zupt(const std::vector<Eigen::Vector3d> &acc_measures,
-                   const std::vector<Eigen::Vector3d> gyo_measures,
+                   const std::vector<Eigen::Vector3d> &gyo_measures,
+                   IMUDetectorType imu_detector_type = IMUDetectorType::GLRT);
+
+  DetectionResult
+  detect_zupt_result(const std::vector<Eigen::Vector3d> &acc_measures,
+                     const std::vector<Eigen::Vector3d> &gyo_measures,
                    IMUDetectorType imu_detector_type = IMUDetectorType::GLRT);
 };

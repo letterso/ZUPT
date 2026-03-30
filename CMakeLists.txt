@@ -38,9 +38,23 @@ include_directories(
   ${EIGEN3_INCLUDE_DIR}
   include)
 
+add_library(zupt_core
+  ./src/zupt.cpp)
+
+target_include_directories(zupt_core
+  PUBLIC
+    ${EIGEN3_INCLUDE_DIR}
+    ${CMAKE_SOURCE_DIR}/include)
+
 add_executable(main
-   ./src/main.cpp
-   ./src/zupt.cpp)
+  ./src/main.cpp)
+
+target_link_libraries(main PRIVATE zupt_core)
+
+add_executable(zupt_dump
+  ./tools/dump_baseline.cpp)
+
+target_link_libraries(zupt_dump PRIVATE zupt_core)
 
 if(ENABLE_ROS2_BAG)
   target_compile_definitions(main PRIVATE ENABLE_ROS2_BAG)
@@ -48,5 +62,17 @@ if(ENABLE_ROS2_BAG)
     rclcpp::rclcpp
     sensor_msgs::sensor_msgs
     rosbag2_cpp::rosbag2_cpp)
+endif()
+
+include(CTest)
+if(BUILD_TESTING)
+  add_executable(zupt_tests
+    ./tests/test_zupt.cpp)
+
+  target_link_libraries(zupt_tests PRIVATE zupt_core)
+
+  add_test(NAME zupt_tests COMMAND zupt_tests)
+  set_tests_properties(zupt_tests PROPERTIES
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 endif()
 

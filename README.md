@@ -11,6 +11,27 @@ cmake --build build -j
 ./build/bin/main
 ```
 
+指定检测模式与输出文件（支持 `glrt/mv/mag/are/all`）：
+
+```bash
+cd /home/robot/develop/cpp/ZUPT
+./build/bin/main --data_type csv --input data/imu_data.csv --detector mag --window_size 3 --score_output build/test_outputs/main_mag_scores.txt
+```
+
+一次运行四种模式并分别保存输出：
+
+```bash
+cd /home/robot/develop/cpp/ZUPT
+./build/bin/main --data_type csv --input data/imu_data.csv --detector all --window_size 3 --score_output build/test_outputs/main_all.txt
+```
+
+`all` 模式会自动生成以下文件：
+
+- `build/test_outputs/main_all_glrt.txt`
+- `build/test_outputs/main_all_mv.txt`
+- `build/test_outputs/main_all_mag.txt`
+- `build/test_outputs/main_all_are.txt`
+
 如需指定编译类型（例如 Release）：
 
 ```bash
